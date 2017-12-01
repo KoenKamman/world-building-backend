@@ -1,0 +1,27 @@
+{
+  "name": "world-building-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KoenKamman/world-building-backend.git"
+  },
+  "author": "Koen Kamman",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/KoenKamman/world-building-backend/issues"
+  },
+  "homepage": "https://github.com/KoenKamman/world-building-backend#readme",
+  "dependencies": {
+    "express": "^4.16.2",
+    "mongoose": "^4.13.5",
+    "nodemon": "^1.12.1"
+  },
+  "devDependencies": {
+    "mocha": "^4.0.1"
+  }
+}
