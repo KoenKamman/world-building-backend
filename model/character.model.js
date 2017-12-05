@@ -9,25 +9,39 @@ const CharacterSchema = new Schema({
 		type: String,
 		required: true
 	},
-	experience: Number,
-	race: { type: Schema.Types.ObjectId, ref: 'race' }
+	description: {
+		type: String,
+		required: true
+	},
+	experience: {
+		type: Number,
+		required: true
+	},
+	race: {type: Schema.Types.ObjectId, ref: 'race', required: true}
+}, {
+	toObject: {
+		virtuals: true
+	},
+	toJSON: {
+		virtuals: true
+	}
 });
 
 
 // Middleware
 
-CharacterSchema.pre('find', function(next) {
+CharacterSchema.pre('find', function (next) {
 	this.populate('race');
 	next();
 });
 
-CharacterSchema.pre('findOne', function(next) {
+CharacterSchema.pre('findOne', function (next) {
 	this.populate('race');
 	next();
 });
 
 
-// Virtual Properties
+// Virtual Attributes
 
 CharacterSchema.virtual('level').get(function () {
 	return this.experience / 100;

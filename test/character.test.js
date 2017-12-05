@@ -14,6 +14,7 @@ describe('Querying a character in the database', () => {
 
 		let character = new Character({
 			name: 'testing character',
+			description: 'testing description',
 			experience: 1000,
 			race: race._id
 		});
