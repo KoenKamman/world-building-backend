@@ -1,5 +1,6 @@
 const Character = require('../../model/character.model');
 const Race = require('../../model/race.model');
+const Adventure = require('../../model/adventure.model');
 const express = require('express');
 const routes = express.Router();
 const mongodb = require('../../config/mongo.db');

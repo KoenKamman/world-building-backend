@@ -14,7 +14,11 @@ const CharacterSchema = new Schema({
 		type: Number,
 		required: true
 	},
-	race: {type: Schema.Types.ObjectId, ref: 'race', required: true}
+	race: {
+		type: Schema.Types.ObjectId,
+		ref: 'race',
+		required: true
+	}
 }, {
 	toObject: {
 		virtuals: true
