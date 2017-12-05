@@ -1,8 +1,16 @@
-const Character = require('../model/character.model');
-const Race = require('../model/race.model');
+const Character = require('../../model/character.model');
+const Race = require('../../model/race.model');
 const express = require('express');
 const routes = express.Router();
-const mongodb = require('../config/mongo.db');
+const mongodb = require('../../config/mongo.db');
+
+
+// Middleware - Removes _id from request body
+
+routes.use((req, res, next) => {
+	delete req.body._id;
+	next()
+});
 
 
 // Returns a list containing all characters
@@ -27,6 +35,7 @@ routes.get('/characters/:id', (req, res) => {
 
 	Character.findById(req.params.id)
 		.then((character) => {
+			if (character === null) res.status(404).json();
 			res.status(200).json(character);
 		})
 		.catch((error) => {
@@ -39,9 +48,9 @@ routes.get('/characters/:id', (req, res) => {
 
 routes.post('/characters', (req, res) => {
 	res.contentType('application/json');
-	const newCharacter = new Character(req.body);
+	const character = new Character(req.body);
 
-	Promise.all([newCharacter.populate('race').execPopulate(), newCharacter.save()])
+	Promise.all([character.populate('race').execPopulate(), character.save()])
 		.then((result) => {
 			res.status(201).json(result[1]);
 		})
@@ -56,30 +65,9 @@ routes.post('/characters', (req, res) => {
 routes.put('/characters/:id', (req, res) => {
 	res.contentType('application/json');
 
-	Character.findById(req.params.id)
+	Character.findByIdAndUpdate(req.params.id, req.body, {new: true})
 		.then((character) => {
-			character.set(req.body);
-			Promise.all([character.populate('race').execPopulate(), character.save()])
-				.then((result) => {
-					res.status(200).json(result[1]);
-				})
-				.catch((error) => {
-					res.status(400).json(error);
-				});
-		})
-		.catch((error) => {
-			res.status(400).json(error);
-		})
-});
-
-
-// Deletes a specific character
-
-routes.delete('/characters/:id', (req, res) => {
-	res.contentType('application/json');
-
-	Character.findByIdAndRemove(req.params.id)
-		.then((character) => {
+			if (character === null) res.status(404).json();
 			character.populate('race').execPopulate()
 				.then((character) => {
 					res.status(200).json(character);
@@ -90,7 +78,29 @@ routes.delete('/characters/:id', (req, res) => {
 		})
 		.catch((error) => {
 			res.status(400).json(error);
+		});
+});
+
+
+// Deletes a specific character
+
+routes.delete('/characters/:id', (req, res) => {
+	res.contentType('application/json');
+
+	Character.findByIdAndRemove(req.params.id)
+		.then((character) => {
+			if (character === null) res.status(404).json();
+			character.populate('race').execPopulate()
+				.then((character) => {
+					res.status(200).json(character);
+				})
+				.catch((error) => {
+					res.status(400).json(error);
+				})
 		})
+		.catch((error) => {
+			res.status(400).json(error);
+		});
 });
 
 module.exports = routes;

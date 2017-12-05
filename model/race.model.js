@@ -6,10 +6,22 @@ const RaceSchema = new Schema({
 		type: String,
 		required: true
 	},
-	strength_mod: Number,
-	agility_mod: Number,
-	intelligence_mod: Number
-
+	description: {
+		type: String,
+		required: true
+	},
+	strength_mod: {
+		type: Number,
+		required: true
+	},
+	agility_mod: {
+		type: Number,
+		required: true
+	},
+	intelligence_mod: {
+		type: Number,
+		required: true
+	}
 });
 
 const Race = mongoose.model('race', RaceSchema);

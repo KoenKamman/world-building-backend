@@ -1,9 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-
-// Schema
-
 const CharacterSchema = new Schema({
 	name: {
 		type: String,

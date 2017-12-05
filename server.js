@@ -1,7 +1,8 @@
 const http = require('http');
 const express = require('express');
 var bodyParser = require('body-parser');
-const characterRoutes = require('./api/character.route');
+const characterRoutes = require('./api/v1/character.route');
+const raceRoutes = require('./api/v1/race.route');
 const config = require('./config/env');
 
 const app = express();
@@ -26,6 +27,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/v1', characterRoutes);
+app.use('/api/v1', raceRoutes);
 
 app.use('*', (req, res) => {
 	res.status(400);
