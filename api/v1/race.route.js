@@ -8,6 +8,7 @@ const neo4j = require('../../config/neo4j.db');
 
 
 // neo4j queries and functions
+// TODO: Move to neo4j class
 
 const createRace =
 	"MERGE (race:Race {name: {nameParam}, description: {descParam}, mongoID: {mongoParam}}) " +
@@ -17,14 +18,35 @@ const createRace =
 	"MERGE (race)-[:HAS_MODIFIER]->(str_mod) " +
 	"MERGE (race)-[:HAS_MODIFIER]->(agi_mod) " +
 	"MERGE (race)-[:HAS_MODIFIER]->(int_mod) " +
-	"RETURN race.name, race.description, race.mongoID, str_mod.value, agi_mod.value, int_mod.value";
+	"RETURN race, str_mod, agi_mod, int_mod";
 
 const deleteRace =
 	"MATCH (race:Race {mongoID: {mongoParam}}) " +
 	"WITH race " +
-	"OPTIONAL MATCH (race)-[r]-(allRelatedNodes) " +
-	"WHERE size((allRelatedNodes)--()) = 1 " +
-	"DETACH DELETE race, allRelatedNodes ";
+	"OPTIONAL MATCH (race)-[:HAS_MODIFIER]->(modifiers) " +
+	"WHERE size((modifiers)<--()) = 1 " +
+	"DETACH DELETE race, modifiers";
+
+const deleteMods =
+	"MATCH (race:Race {mongoID: {mongoParam}}) " +
+	"WITH race " +
+	"OPTIONAL MATCH (race)-[:HAS_MODIFIER]->(modifiers) " +
+	"WHERE size((modifiers)<--()) = 1 " +
+	"OPTIONAL MATCH (race)-[rel:HAS_MODIFIER]->(mods) " +
+	"WHERE size((mods)<--()) > 1 " +
+	"DETACH DELETE modifiers, rel";
+
+const updateRace =
+	"MATCH (race:Race {mongoID: {mongoParam}}) " +
+	"WITH race " +
+	"MERGE (str_mod:StrengthModifier {value: {strParam}}) " +
+	"MERGE (agi_mod:AgilityModifier {value: {agiParam}}) " +
+	"MERGE (int_mod:IntelligenceModifier {value: {intParam}}) " +
+	"MERGE (race)-[:HAS_MODIFIER]->(str_mod) " +
+	"MERGE (race)-[:HAS_MODIFIER]->(agi_mod) " +
+	"MERGE (race)-[:HAS_MODIFIER]->(int_mod) " +
+	"SET race.name =  {nameParam}, race.description = {descParam} " +
+	"RETURN race, str_mod, agi_mod, int_mod";
 
 function printQuery(result) {
 	console.log("---Executed cypher query---");
@@ -127,17 +149,18 @@ routes.put('/races/:id', (req, res) => {
 	const race = req.body;
 
 	const transaction = session.beginTransaction();
-	transaction.run(deleteRace, {mongoParam: req.params.id})
+	transaction.run(deleteMods,{mongoParam: req.params.id})
 		.then((result) => {
 			printQuery(result);
-			return transaction.run(createRace, {
-				nameParam: race.name,
-				descParam: race.description,
-				mongoParam: req.params.id,
-				strParam: race.strength_mod,
-				agiParam: race.agility_mod,
-				intParam: race.intelligence_mod
-			});
+			return transaction.run(updateRace,
+				{
+					nameParam: race.name,
+					descParam: race.description,
+					mongoParam: req.params.id,
+					strParam: race.strength_mod,
+					agiParam: race.agility_mod,
+					intParam: race.intelligence_mod
+				});
 		})
 		.then((result) => {
 			printQuery(result);
@@ -157,12 +180,13 @@ routes.put('/races/:id', (req, res) => {
 		.then((result) => {
 			if (result.summary.statement.text === 'COMMIT') {
 				console.log("Transaction committed to neo4j");
-			} else if (result.summary.statement.text === 'ROLLBACK'){
+			} else if (result.summary.statement.text === 'ROLLBACK') {
 				console.log("Neo4j transaction rolled back");
 			}
 			session.close();
 		})
 		.catch((error) => {
+			console.log(error);
 			transaction.rollback()
 				.then(() => {
 					console.log("Neo4j transaction rolled back");
@@ -175,15 +199,6 @@ routes.put('/races/:id', (req, res) => {
 			res.status(400).json(error);
 		});
 
-
-	// Race.findByIdAndUpdate(req.params.id, req.body, {new: true})
-	// 	.then((race) => {
-	// 		if (race === null) res.status(404).json();
-	// 		res.status(200).json(race);
-	// 	})
-	// 	.catch((error) => {
-	// 		res.status(400).json(error);
-	// 	});
 });
 
 
@@ -213,7 +228,7 @@ routes.delete('/races/:id', (req, res) => {
 		.then((result) => {
 			if (result.summary.statement.text === 'COMMIT') {
 				console.log("Transaction committed to neo4j");
-			} else if (result.summary.statement.text === 'ROLLBACK'){
+			} else if (result.summary.statement.text === 'ROLLBACK') {
 				console.log("Neo4j transaction rolled back");
 			}
 			session.close();
