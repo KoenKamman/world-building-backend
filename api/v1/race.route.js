@@ -26,7 +26,7 @@ const deleteRace =
 	"WHERE size((allRelatedNodes)--()) = 1 " +
 	"DETACH DELETE race, allRelatedNodes ";
 
-function printQuery(result){
+function printQuery(result) {
 	console.log("---Executed cypher query---");
 	console.log(result.summary.statement.text);
 	console.log("---------------------------");
@@ -80,35 +80,31 @@ routes.post('/races', (req, res) => {
 	const race = new Race(req.body);
 	const session = neo4j.session();
 
-	race.save()
-		.then((race) => {
-			return session
-				.run(createRace,
-					{
-						nameParam: race.name,
-						descParam: race.description,
-						mongoParam: race._id.toString(),
-						strParam: race.strength_mod,
-						agiParam: race.agility_mod,
-						intParam: race.intelligence_mod
-					});
+	const transaction = session.beginTransaction();
+	transaction.run(createRace,
+		{
+			nameParam: race.name,
+			descParam: race.description,
+			mongoParam: race._id.toString(),
+			strParam: race.strength_mod,
+			agiParam: race.agility_mod,
+			intParam: race.intelligence_mod
 		})
 		.then((result) => {
 			printQuery(result);
-			session.close();
+			return race.save();
+		})
+		.then((race) => {
 			res.status(200).json(race);
+			return transaction.commit();
+		})
+		.then((result) => {
+			console.log("Transaction committed to neo4j");
+			session.close();
 		})
 		.catch((error) => {
+			transaction.rollback();
 			session.close();
-			console.log(error);
-			race.remove()
-				.then(() => {
-					console.log("Removed race from MongoDB to keep in sync with neo4j");
-				})
-				.catch((error) => {
-					console.log(error);
-					console.log("Race could not be removed, databases may be out of sync as a result");
-				});
 			res.status(400).json(error);
 		});
 
@@ -137,13 +133,15 @@ routes.delete('/races/:id', (req, res) => {
 	res.contentType('application/json');
 	const session = neo4j.session();
 
-	session.run(deleteRace, {mongoParam: req.params.id})
+	const transaction = session.beginTransaction();
+	transaction.run(deleteRace, {mongoParam: req.params.id})
 		.then((result) => {
-			printQuery(result);
+			console.log(result);
 		})
 		.catch((error) => {
-			console.log(error);
+			res.status(400).json(error);
 		});
+
 
 	// Race.findByIdAndRemove(req.params.id)
 	// 	.then((race) => {
@@ -153,6 +151,7 @@ routes.delete('/races/:id', (req, res) => {
 	// 	.catch((error) => {
 	// 		res.status(400).json(error);
 	// 	});
+
 });
 
 module.exports = routes;
