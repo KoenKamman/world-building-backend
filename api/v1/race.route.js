@@ -95,6 +95,7 @@ routes.post('/races', (req, res) => {
 			return race.save();
 		})
 		.then((race) => {
+			console.log("Race added to MongoDB");
 			res.status(200).json(race);
 			return transaction.commit();
 		})
@@ -103,8 +104,15 @@ routes.post('/races', (req, res) => {
 			session.close();
 		})
 		.catch((error) => {
-			transaction.rollback();
-			session.close();
+			transaction.rollback()
+				.then(() => {
+					console.log("Neo4j transaction rolled back");
+					session.close();
+				})
+				.catch((error) => {
+					console.log(error);
+					session.close();
+				});
 			res.status(400).json(error);
 		});
 
@@ -115,15 +123,67 @@ routes.post('/races', (req, res) => {
 
 routes.put('/races/:id', (req, res) => {
 	res.contentType('application/json');
+	const session = neo4j.session();
+	const race = req.body;
 
-	Race.findByIdAndUpdate(req.params.id, req.body, {new: true})
+	const transaction = session.beginTransaction();
+	transaction.run(deleteRace, {mongoParam: req.params.id})
+		.then((result) => {
+			printQuery(result);
+			return transaction.run(createRace, {
+				nameParam: race.name,
+				descParam: race.description,
+				mongoParam: req.params.id,
+				strParam: race.strength_mod,
+				agiParam: race.agility_mod,
+				intParam: race.intelligence_mod
+			});
+		})
+		.then((result) => {
+			printQuery(result);
+			return Race.findByIdAndUpdate(req.params.id, race, {new: true});
+		})
 		.then((race) => {
-			if (race === null) res.status(404).json();
-			res.status(200).json(race);
+			if (race === null) {
+				console.log("Race not found in MongoDB");
+				res.status(404).json();
+				return transaction.rollback();
+			} else {
+				console.log("Race updated in MongoDB");
+				res.status(200).json(race);
+				return transaction.commit();
+			}
+		})
+		.then((result) => {
+			if (result.summary.statement.text === 'COMMIT') {
+				console.log("Transaction committed to neo4j");
+			} else if (result.summary.statement.text === 'ROLLBACK'){
+				console.log("Neo4j transaction rolled back");
+			}
+			session.close();
 		})
 		.catch((error) => {
+			transaction.rollback()
+				.then(() => {
+					console.log("Neo4j transaction rolled back");
+					session.close();
+				})
+				.catch((error) => {
+					console.log(error);
+					session.close();
+				});
 			res.status(400).json(error);
 		});
+
+
+	// Race.findByIdAndUpdate(req.params.id, req.body, {new: true})
+	// 	.then((race) => {
+	// 		if (race === null) res.status(404).json();
+	// 		res.status(200).json(race);
+	// 	})
+	// 	.catch((error) => {
+	// 		res.status(400).json(error);
+	// 	});
 });
 
 
@@ -136,21 +196,40 @@ routes.delete('/races/:id', (req, res) => {
 	const transaction = session.beginTransaction();
 	transaction.run(deleteRace, {mongoParam: req.params.id})
 		.then((result) => {
-			console.log(result);
+			printQuery(result);
+			return Race.findByIdAndRemove(req.params.id);
+		})
+		.then((race) => {
+			if (race === null) {
+				console.log("Race not found in MongoDB");
+				res.status(404).json();
+				return transaction.rollback();
+			} else {
+				console.log("Race deleted from MongoDB");
+				res.status(200).json(race);
+				return transaction.commit();
+			}
+		})
+		.then((result) => {
+			if (result.summary.statement.text === 'COMMIT') {
+				console.log("Transaction committed to neo4j");
+			} else if (result.summary.statement.text === 'ROLLBACK'){
+				console.log("Neo4j transaction rolled back");
+			}
+			session.close();
 		})
 		.catch((error) => {
+			transaction.rollback()
+				.then(() => {
+					console.log("Neo4j transaction rolled back");
+					session.close();
+				})
+				.catch((error) => {
+					console.log(error);
+					session.close();
+				});
 			res.status(400).json(error);
 		});
-
-
-	// Race.findByIdAndRemove(req.params.id)
-	// 	.then((race) => {
-	// 		if (race === null) res.status(404).json();
-	// 		res.status(200).json(race);
-	// 	})
-	// 	.catch((error) => {
-	// 		res.status(400).json(error);
-	// 	});
 
 });
 
