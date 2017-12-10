@@ -7,8 +7,7 @@ const mongodb = require('../../config/mongo.db');
 const neo4j = require('../../config/neo4j.db');
 
 
-// neo4j queries and functions
-// TODO: Move to neo4j class
+// neo4j queries
 
 const createRace =
 	"MERGE (race:Race {name: {nameParam}, description: {descParam}, mongoID: {mongoParam}}) " +
@@ -47,12 +46,6 @@ const updateRace =
 	"MERGE (race)-[:HAS_MODIFIER]->(int_mod) " +
 	"SET race.name =  {nameParam}, race.description = {descParam} " +
 	"RETURN race, str_mod, agi_mod, int_mod";
-
-function printQuery(result) {
-	console.log("---Executed cypher query---");
-	console.log(result.summary.statement.text);
-	console.log("---------------------------");
-}
 
 
 // Middleware - Removes _id from request body
@@ -100,7 +93,7 @@ routes.get('/races/:id', (req, res) => {
 routes.post('/races', (req, res) => {
 	res.contentType('application/json');
 	const race = new Race(req.body);
-	const session = neo4j.session();
+	const session = neo4j.driver.session();
 
 	const transaction = session.beginTransaction();
 	transaction.run(createRace,
@@ -113,7 +106,7 @@ routes.post('/races', (req, res) => {
 			intParam: race.intelligence_mod
 		})
 		.then((result) => {
-			printQuery(result);
+			neo4j.printQuery(result);
 			return race.save();
 		})
 		.then((race) => {
@@ -145,13 +138,13 @@ routes.post('/races', (req, res) => {
 
 routes.put('/races/:id', (req, res) => {
 	res.contentType('application/json');
-	const session = neo4j.session();
+	const session = neo4j.driver.session();
 	const race = req.body;
 
 	const transaction = session.beginTransaction();
 	transaction.run(deleteMods,{mongoParam: req.params.id})
 		.then((result) => {
-			printQuery(result);
+			neo4j.printQuery(result);
 			return transaction.run(updateRace,
 				{
 					nameParam: race.name,
@@ -163,7 +156,7 @@ routes.put('/races/:id', (req, res) => {
 				});
 		})
 		.then((result) => {
-			printQuery(result);
+			neo4j.printQuery(result);
 			return Race.findByIdAndUpdate(req.params.id, race, {new: true});
 		})
 		.then((race) => {
@@ -186,7 +179,6 @@ routes.put('/races/:id', (req, res) => {
 			session.close();
 		})
 		.catch((error) => {
-			console.log(error);
 			transaction.rollback()
 				.then(() => {
 					console.log("Neo4j transaction rolled back");
@@ -206,12 +198,12 @@ routes.put('/races/:id', (req, res) => {
 
 routes.delete('/races/:id', (req, res) => {
 	res.contentType('application/json');
-	const session = neo4j.session();
+	const session = neo4j.driver.session();
 
 	const transaction = session.beginTransaction();
 	transaction.run(deleteRace, {mongoParam: req.params.id})
 		.then((result) => {
-			printQuery(result);
+			neo4j.printQuery(result);
 			return Race.findByIdAndRemove(req.params.id);
 		})
 		.then((race) => {
