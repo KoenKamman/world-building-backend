@@ -4,6 +4,37 @@ const Adventure = require('../../model/adventure.model');
 const express = require('express');
 const routes = express.Router();
 const mongodb = require('../../config/mongo.db');
+const neo4j = require('../../config/neo4j.db');
+
+
+// neo4j queries
+
+const createAdventure =
+	"CREATE (adv:Adventure {name: {nameParam}, description: {descParam}, experience_gain: {xpParam}, " +
+	"mongoID: {mongoParam}}) " +
+	"RETURN adv";
+
+const linkCharacter =
+	"MATCH (adv:Adventure {mongoID: {advIDParam}}) " +
+	"MATCH (char:Character {mongoID: {charIDParam}}) " +
+	"CREATE (adv)-[:HAS_CHARACTER]->(char) " +
+	"RETURN adv, char";
+
+const updateAdventure =
+	"MATCH (adv:Adventure {mongoID: {mongoParam}}) " +
+	"SET adv.name = {nameParam} " +
+	"SET adv.description = {descParam} " +
+	"SET adv.experience_gain = {xpParam} " +
+	"RETURN adv";
+
+const deleteAdventure =
+	"MATCH (adv:Adventure {mongoID: {mongoParam}}) " +
+	"DETACH DELETE adv";
+
+const unlinkCharacters =
+	"MATCH (adv:Adventure {mongoID: {mongoParam}})-[r:HAS_CHARACTER]->() " +
+	"DELETE r " +
+	"RETURN adv";
 
 
 // Middleware - Removes _id from request body
@@ -50,14 +81,59 @@ routes.get('/adventures/:id', (req, res) => {
 routes.post('/adventures', (req, res) => {
 	res.contentType('application/json');
 	const adventure = new Adventure(req.body);
+	const session = neo4j.driver.session();
 
-	Promise.all([adventure.populate('characters').execPopulate(), adventure.save()])
+	const transaction = session.beginTransaction();
+	adventure.populate('characters').execPopulate()
+		.then(() => {
+			return transaction.run(createAdventure,
+				{
+					mongoParam: adventure._id.toString(),
+					nameParam: adventure.name,
+					descParam: adventure.description,
+					xpParam: adventure.experience_gain
+				});
+		})
 		.then((result) => {
-			res.status(201).json(result[1]);
+			neo4j.printQuery(result);
+			let promises = [];
+			for (let i = 0; i < adventure.characters.length; i++) {
+				promises.push(transaction.run(linkCharacter,
+					{
+						advIDParam: adventure._id.toString(),
+						charIDParam: adventure.characters[i]._id.toString()
+					}));
+			}
+			return Promise.all(promises);
+		})
+		.then((result) => {
+			for (let i = 0; i < result.length; i++) {
+				neo4j.printQuery(result[i]);
+			}
+			return adventure.save();
+		})
+		.then((result) => {
+			console.log("Adventure added to MongoDB");
+			res.status(201).json(result);
+			return transaction.commit();
+		})
+		.then((result) => {
+			console.log("Transaction committed to neo4j");
+			session.close();
 		})
 		.catch((error) => {
+			transaction.rollback()
+				.then(() => {
+					console.log("Neo4j transaction rolled back");
+					session.close();
+				})
+				.catch((error) => {
+					console.log(error);
+					session.close();
+				});
 			res.status(400).json(error);
 		});
+
 });
 
 
@@ -65,19 +141,68 @@ routes.post('/adventures', (req, res) => {
 
 routes.put('/adventures/:id', (req, res) => {
 	res.contentType('application/json');
+	const session = neo4j.driver.session();
+	const adventure = req.body;
 
-	Adventure.findByIdAndUpdate(req.params.id, req.body, {new: true})
+	const transaction = session.beginTransaction();
+	transaction.run(updateAdventure,
+		{
+			mongoParam: req.params.id,
+			nameParam: adventure.name,
+			descParam: adventure.description,
+			xpParam: adventure.experience_gain
+		})
+		.then((result) => {
+			neo4j.printQuery(result);
+			return transaction.run(unlinkCharacters, {mongoParam: req.params.id});
+		})
+		.then((result) => {
+			neo4j.printQuery(result);
+			let promises = [];
+			for (let i = 0; i < adventure.characters.length; i++) {
+				promises.push(transaction.run(linkCharacter,
+					{
+						advIDParam: req.params.id,
+						charIDParam: adventure.characters[i]
+					}));
+			}
+			return Promise.all(promises);
+		})
+		.then((result) => {
+			for (let i = 0; i < result.length; i++) {
+				neo4j.printQuery(result[i]);
+			}
+			return Adventure.findByIdAndUpdate(req.params.id, req.body, {new: true});
+		})
 		.then((adventure) => {
-			if (adventure === null) res.status(404).json();
-			adventure.populate('characters').execPopulate()
-				.then((adventure) => {
-					res.status(200).json(adventure);
-				})
-				.catch((error) => {
-					res.status(400).json(error);
-				})
+			if (adventure !== null) {
+				return adventure.populate('characters').execPopulate();
+			} else {
+				return adventure;
+			}
+		})
+		.then((adventure) => {
+			if (adventure === null) {
+				console.log("Adventure not found in MongoDB");
+				res.status(404).json();
+				return transaction.rollback();
+			} else {
+				console.log("Adventure deleted from MongoDB");
+				res.status(200).json(adventure);
+				return transaction.commit();
+			}
+		})
+		.then((result) => {
+			if (result.summary.statement.text === 'COMMIT') {
+				console.log("Transaction committed to neo4j");
+			} else if (result.summary.statement.text === 'ROLLBACK') {
+				console.log("Neo4j transaction rolled back");
+			}
+			session.close();
 		})
 		.catch((error) => {
+			session.close();
+			console.log(error);
 			res.status(400).json(error);
 		});
 });
@@ -87,19 +212,43 @@ routes.put('/adventures/:id', (req, res) => {
 
 routes.delete('/adventures/:id', (req, res) => {
 	res.contentType('application/json');
+	const session = neo4j.driver.session();
 
-	Adventure.findByIdAndRemove(req.params.id)
+	const transaction = session.beginTransaction();
+	transaction.run(deleteAdventure, {mongoParam: req.params.id})
+		.then((result) => {
+			neo4j.printQuery(result);
+			return Adventure.findByIdAndRemove(req.params.id)
+		})
 		.then((adventure) => {
-			if (adventure === null) res.status(404).json();
-			adventure.populate('characters').execPopulate()
-				.then((adventure) => {
-					res.status(200).json(adventure);
-				})
-				.catch((error) => {
-					res.status(400).json(error);
-				})
+			if (adventure !== null) {
+				return adventure.populate('characters').execPopulate();
+			} else {
+				return adventure;
+			}
+		})
+		.then((adventure) => {
+			if (adventure === null) {
+				console.log("Adventure not found in MongoDB");
+				res.status(404).json();
+				return transaction.rollback();
+			} else {
+				console.log("Adventure deleted from MongoDB");
+				res.status(200).json(adventure);
+				return transaction.commit();
+			}
+		})
+		.then((result) => {
+			if (result.summary.statement.text === 'COMMIT') {
+				console.log("Transaction committed to neo4j");
+			} else if (result.summary.statement.text === 'ROLLBACK') {
+				console.log("Neo4j transaction rolled back");
+			}
+			session.close();
 		})
 		.catch((error) => {
+			session.close();
+			console.log(error);
 			res.status(400).json(error);
 		});
 });

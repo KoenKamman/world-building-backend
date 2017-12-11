@@ -91,11 +91,11 @@ routes.post('/characters', (req, res) => {
 		})
 		.then((result) => {
 			neo4j.printQuery(result);
-			return Promise.all([character.populate('race').execPopulate(), character.save()]);
+			return character.save();
 		})
 		.then((result) => {
 			console.log("Character added to MongoDB");
-			res.status(201).json(result[1]);
+			res.status(201).json(result);
 			return transaction.commit();
 		})
 		.then((result) => {
@@ -215,6 +215,7 @@ routes.delete('/characters/:id', (req, res) => {
 			session.close();
 		})
 		.catch((error) => {
+			session.close();
 			res.status(400).json(error);
 		});
 });
