@@ -129,12 +129,9 @@ routes.put('/characters/:id', (req, res) => {
 
 	Character.findById(req.params.id)
 		.then((character) => {
-			return character.populate('race').execPopulate()
-		})
-		.then((character) => {
 			return transaction.run(updateCharacter,
 				{
-					raceIDParam: character.race._id.toString(),
+					raceIDParam: character.race,
 					charIDParam: req.params.id,
 					nameParam: newCharacter.name,
 					descParam: newCharacter.description,
@@ -144,6 +141,9 @@ routes.put('/characters/:id', (req, res) => {
 		.then((result) => {
 			neo4j.printQuery(result);
 			return Character.findByIdAndUpdate(req.params.id, req.body, {new: true})
+		})
+		.then((character) => {
+			return character.populate('race').execPopulate()
 		})
 		.then((character) => {
 			if (character === null) {
