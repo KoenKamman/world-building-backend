@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
+const neo4j = require('../config/neo4j.db');
 
 mongoose.Promise = global.Promise;
 
 before((done) => {
-	mongoose.connect('mongodb://localhost/worldbuilding_test');
+	mongoose.connect('mongodb://localhost/worldbuilding_test', {useMongoClient: true});
 	mongoose.connection
 		.once('open', () => done())
 		.on('error', (err) => {
@@ -12,13 +13,13 @@ before((done) => {
 });
 
 beforeEach((done) => {
-	const {characters, races} = mongoose.connection.collections;
-	Promise.all([characters.drop(), races.drop()])
+	const {characters, races, adventures} = mongoose.connection.collections;
+	const session = neo4j.driver.session();
+	Promise.all([characters.drop(), races.drop(), adventures.drop(), session.run('MATCH (n) DETACH DELETE n')])
 		.then(() => {
 			done();
 		})
-		.catch((error) => {
-			console.log(error);
+		.catch(() => {
 			done();
 		});
 });

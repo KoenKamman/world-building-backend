@@ -7,8 +7,8 @@ const env = {
 	dbDatabase: process.env.DB_DATABASE || 'world-building',
 	dbHostNeo: process.env.DB_HOST_NEO || 'localhost',
 	dbPortNeo: process.env.DB_PORT_NEO || '',
-	dbUserNeo: process.env.DB_USER_NEO || 'world-building-api',
-	dbPasswordNeo: process.env.DB_PASSWORD_NEO || 'b.0VaudFVhrtgK.kdUjbrXboxJuWd6i',
+	dbUserNeo: process.env.DB_USER_NEO || '',
+	dbPasswordNeo: process.env.DB_PASSWORD_NEO || '',
 };
 
 const dburl = process.env.NODE_ENV === 'production' ?
@@ -17,7 +17,7 @@ const dburl = process.env.NODE_ENV === 'production' ?
 
 const dburlNeo = process.env.NODE_ENV === 'production' ?
 	'bolt://' + env.dbHostNeo + ':' + env.dbPortNeo:
-	'bolt://localhost/';
+	'bolt://localhost:7687/';
 
 module.exports = {
 	env: env,

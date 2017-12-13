@@ -67,8 +67,11 @@ routes.get('/adventures/:id', (req, res) => {
 
 	Adventure.findById(req.params.id)
 		.then((adventure) => {
-			if (adventure === null) res.status(404).json();
-			res.status(200).json(adventure);
+			if (adventure === null) {
+				res.status(404).json();
+			} else {
+				res.status(200).json(adventure);
+			}
 		})
 		.catch((error) => {
 			res.status(400).json(error);
@@ -95,7 +98,7 @@ routes.post('/adventures', (req, res) => {
 				});
 		})
 		.then((result) => {
-			neo4j.printQuery(result);
+			// neo4j.printQuery(result);
 			let promises = [];
 			for (let i = 0; i < adventure.characters.length; i++) {
 				promises.push(transaction.run(linkCharacter,
@@ -108,23 +111,23 @@ routes.post('/adventures', (req, res) => {
 		})
 		.then((result) => {
 			for (let i = 0; i < result.length; i++) {
-				neo4j.printQuery(result[i]);
+				// neo4j.printQuery(result[i]);
 			}
 			return adventure.save();
 		})
 		.then((result) => {
-			console.log("Adventure added to MongoDB");
+			// console.log("Adventure added to MongoDB");
 			res.status(201).json(result);
 			return transaction.commit();
 		})
 		.then((result) => {
-			console.log("Transaction committed to neo4j");
+			// console.log("Transaction committed to neo4j");
 			session.close();
 		})
 		.catch((error) => {
 			transaction.rollback()
 				.then(() => {
-					console.log("Neo4j transaction rolled back");
+					// console.log("Neo4j transaction rolled back");
 					session.close();
 				})
 				.catch((error) => {
@@ -153,11 +156,11 @@ routes.put('/adventures/:id', (req, res) => {
 			xpParam: adventure.experience_gain
 		})
 		.then((result) => {
-			neo4j.printQuery(result);
+			// neo4j.printQuery(result);
 			return transaction.run(unlinkCharacters, {mongoParam: req.params.id});
 		})
 		.then((result) => {
-			neo4j.printQuery(result);
+			// neo4j.printQuery(result);
 			let promises = [];
 			for (let i = 0; i < adventure.characters.length; i++) {
 				promises.push(transaction.run(linkCharacter,
@@ -170,7 +173,7 @@ routes.put('/adventures/:id', (req, res) => {
 		})
 		.then((result) => {
 			for (let i = 0; i < result.length; i++) {
-				neo4j.printQuery(result[i]);
+				// neo4j.printQuery(result[i]);
 			}
 			return Adventure.findByIdAndUpdate(req.params.id, req.body, {new: true});
 		})
@@ -183,20 +186,20 @@ routes.put('/adventures/:id', (req, res) => {
 		})
 		.then((adventure) => {
 			if (adventure === null) {
-				console.log("Adventure not found in MongoDB");
+				// console.log("Adventure not found in MongoDB");
 				res.status(404).json();
 				return transaction.rollback();
 			} else {
-				console.log("Adventure deleted from MongoDB");
+				// console.log("Adventure deleted from MongoDB");
 				res.status(200).json(adventure);
 				return transaction.commit();
 			}
 		})
 		.then((result) => {
 			if (result.summary.statement.text === 'COMMIT') {
-				console.log("Transaction committed to neo4j");
+				// console.log("Transaction committed to neo4j");
 			} else if (result.summary.statement.text === 'ROLLBACK') {
-				console.log("Neo4j transaction rolled back");
+				// console.log("Neo4j transaction rolled back");
 			}
 			session.close();
 		})
@@ -217,7 +220,7 @@ routes.delete('/adventures/:id', (req, res) => {
 	const transaction = session.beginTransaction();
 	transaction.run(deleteAdventure, {mongoParam: req.params.id})
 		.then((result) => {
-			neo4j.printQuery(result);
+			// neo4j.printQuery(result);
 			return Adventure.findByIdAndRemove(req.params.id)
 		})
 		.then((adventure) => {
@@ -229,20 +232,20 @@ routes.delete('/adventures/:id', (req, res) => {
 		})
 		.then((adventure) => {
 			if (adventure === null) {
-				console.log("Adventure not found in MongoDB");
+				// console.log("Adventure not found in MongoDB");
 				res.status(404).json();
 				return transaction.rollback();
 			} else {
-				console.log("Adventure deleted from MongoDB");
+				// console.log("Adventure deleted from MongoDB");
 				res.status(200).json(adventure);
 				return transaction.commit();
 			}
 		})
 		.then((result) => {
 			if (result.summary.statement.text === 'COMMIT') {
-				console.log("Transaction committed to neo4j");
+				// console.log("Transaction committed to neo4j");
 			} else if (result.summary.statement.text === 'ROLLBACK') {
-				console.log("Neo4j transaction rolled back");
+				// console.log("Neo4j transaction rolled back");
 			}
 			session.close();
 		})

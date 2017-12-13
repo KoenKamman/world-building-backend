@@ -61,8 +61,11 @@ routes.get('/characters/:id', (req, res) => {
 
 	Character.findById(req.params.id)
 		.then((character) => {
-			if (character === null) res.status(404).json();
-			res.status(200).json(character);
+			if (character === null) {
+				res.status(404).json();
+			} else {
+				res.status(200).json(character);
+			}
 		})
 		.catch((error) => {
 			res.status(400).json(error);
@@ -90,26 +93,26 @@ routes.post('/characters', (req, res) => {
 				});
 		})
 		.then((result) => {
-			neo4j.printQuery(result);
+			// neo4j.printQuery(result);
 			return character.save();
 		})
 		.then((result) => {
-			console.log("Character added to MongoDB");
+			// console.log("Character added to MongoDB");
 			res.status(201).json(result);
 			return transaction.commit();
 		})
 		.then((result) => {
-			console.log("Transaction committed to neo4j");
+			// console.log("Transaction committed to neo4j");
 			session.close();
 		})
 		.catch((error) => {
 			transaction.rollback()
 				.then(() => {
-					console.log("Neo4j transaction rolled back");
+					// console.log("Neo4j transaction rolled back");
 					session.close();
 				})
 				.catch((error) => {
-					console.log(error);
+					console.error(error);
 					session.close();
 				});
 			res.status(400).json(error);
@@ -139,7 +142,7 @@ routes.put('/characters/:id', (req, res) => {
 				})
 		})
 		.then((result) => {
-			neo4j.printQuery(result);
+			// neo4j.printQuery(result);
 			return Character.findByIdAndUpdate(req.params.id, req.body, {new: true})
 		})
 		.then((character) => {
@@ -147,32 +150,32 @@ routes.put('/characters/:id', (req, res) => {
 		})
 		.then((character) => {
 			if (character === null) {
-				console.log("character not found in MongoDB");
+				// console.log("character not found in MongoDB");
 				res.status(404).json();
 				return transaction.rollback();
 			} else {
-				console.log("character updated in MongoDB");
+				// console.log("character updated in MongoDB");
 				res.status(200).json(character);
 				return transaction.commit();
 			}
 		})
 		.then((result) => {
 			if (result.summary.statement.text === 'COMMIT') {
-				console.log("Transaction committed to neo4j");
+				// console.log("Transaction committed to neo4j");
 			} else if (result.summary.statement.text === 'ROLLBACK') {
-				console.log("Neo4j transaction rolled back");
+				// console.log("Neo4j transaction rolled back");
 			}
 			session.close();
 		})
 		.catch((error) => {
-			console.log(error);
+			console.error(error);
 			transaction.rollback()
 				.then(() => {
-					console.log("Neo4j transaction rolled back");
+					// console.log("Neo4j transaction rolled back");
 					session.close();
 				})
 				.catch((error) => {
-					console.log(error);
+					console.error(error);
 					session.close();
 				});
 			res.status(400).json(error);
@@ -189,7 +192,7 @@ routes.delete('/characters/:id', (req, res) => {
 	const transaction = session.beginTransaction();
 	transaction.run(deleteCharacter, {mongoParam: req.params.id})
 		.then((result) => {
-			neo4j.printQuery(result);
+			// neo4j.printQuery(result);
 			return Character.findByIdAndRemove(req.params.id);
 		})
 		.then((character) => {
@@ -197,20 +200,20 @@ routes.delete('/characters/:id', (req, res) => {
 		})
 		.then((character) => {
 			if (character === null) {
-				console.log("Character not found in MongoDB");
+				// console.log("Character not found in MongoDB");
 				res.status(404).json();
 				return transaction.rollback();
 			} else {
-				console.log("Character deleted from MongoDB");
+				// console.log("Character deleted from MongoDB");
 				res.status(200).json(character);
 				return transaction.commit();
 			}
 		})
 		.then((result) => {
 			if (result.summary.statement.text === 'COMMIT') {
-				console.log("Transaction committed to neo4j");
+				// console.log("Transaction committed to neo4j");
 			} else if (result.summary.statement.text === 'ROLLBACK') {
-				console.log("Neo4j transaction rolled back");
+				// console.log("Neo4j transaction rolled back");
 			}
 			session.close();
 		})

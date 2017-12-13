@@ -79,8 +79,11 @@ routes.get('/races/:id', (req, res) => {
 
 	Race.findById(req.params.id)
 		.then((race) => {
-			if (race === null) res.status(404).json();
-			res.status(200).json(race);
+			if (race === null) {
+				res.status(404).json();
+			} else {
+				res.status(200).json(race);
+			}
 		})
 		.catch((error) => {
 			res.status(400).json(error);
@@ -106,22 +109,22 @@ routes.post('/races', (req, res) => {
 			intParam: race.intelligence_mod
 		})
 		.then((result) => {
-			neo4j.printQuery(result);
+			// neo4j.printQuery(result);
 			return race.save();
 		})
 		.then((race) => {
-			console.log("Race added to MongoDB");
-			res.status(200).json(race);
+			// console.log("Race added to MongoDB");
+			res.status(201).json(race);
 			return transaction.commit();
 		})
 		.then((result) => {
-			console.log("Transaction committed to neo4j");
+			// console.log("Transaction committed to neo4j");
 			session.close();
 		})
 		.catch((error) => {
 			transaction.rollback()
 				.then(() => {
-					console.log("Neo4j transaction rolled back");
+					// console.log("Neo4j transaction rolled back");
 					session.close();
 				})
 				.catch((error) => {
@@ -142,9 +145,9 @@ routes.put('/races/:id', (req, res) => {
 	const race = req.body;
 
 	const transaction = session.beginTransaction();
-	transaction.run(deleteMods,{mongoParam: req.params.id})
+	transaction.run(deleteMods, {mongoParam: req.params.id})
 		.then((result) => {
-			neo4j.printQuery(result);
+			// neo4j.printQuery(result);
 			return transaction.run(updateRace,
 				{
 					nameParam: race.name,
@@ -156,32 +159,32 @@ routes.put('/races/:id', (req, res) => {
 				});
 		})
 		.then((result) => {
-			neo4j.printQuery(result);
+			// neo4j.printQuery(result);
 			return Race.findByIdAndUpdate(req.params.id, race, {new: true});
 		})
 		.then((race) => {
 			if (race === null) {
-				console.log("Race not found in MongoDB");
+				// console.log("Race not found in MongoDB");
 				res.status(404).json();
 				return transaction.rollback();
 			} else {
-				console.log("Race updated in MongoDB");
+				// console.log("Race updated in MongoDB");
 				res.status(200).json(race);
 				return transaction.commit();
 			}
 		})
 		.then((result) => {
 			if (result.summary.statement.text === 'COMMIT') {
-				console.log("Transaction committed to neo4j");
+				// console.log("Transaction committed to neo4j");
 			} else if (result.summary.statement.text === 'ROLLBACK') {
-				console.log("Neo4j transaction rolled back");
+				// console.log("Neo4j transaction rolled back");
 			}
 			session.close();
 		})
 		.catch((error) => {
 			transaction.rollback()
 				.then(() => {
-					console.log("Neo4j transaction rolled back");
+					// console.log("Neo4j transaction rolled back");
 					session.close();
 				})
 				.catch((error) => {
@@ -203,36 +206,36 @@ routes.delete('/races/:id', (req, res) => {
 	const transaction = session.beginTransaction();
 	transaction.run(deleteRace, {mongoParam: req.params.id})
 		.then((result) => {
-			neo4j.printQuery(result);
+			// neo4j.printQuery(result);
 			return Race.findByIdAndRemove(req.params.id);
 		})
 		.then((race) => {
 			if (race === null) {
-				console.log("Race not found in MongoDB");
+				// console.log("Race not found in MongoDB");
 				res.status(404).json();
 				return transaction.rollback();
 			} else {
-				console.log("Race deleted from MongoDB");
+				// console.log("Race deleted from MongoDB");
 				res.status(200).json(race);
 				return transaction.commit();
 			}
 		})
 		.then((result) => {
 			if (result.summary.statement.text === 'COMMIT') {
-				console.log("Transaction committed to neo4j");
+				// console.log("Transaction committed to neo4j");
 			} else if (result.summary.statement.text === 'ROLLBACK') {
-				console.log("Neo4j transaction rolled back");
+				// console.log("Neo4j transaction rolled back");
 			}
 			session.close();
 		})
 		.catch((error) => {
 			transaction.rollback()
 				.then(() => {
-					console.log("Neo4j transaction rolled back");
+					// console.log("Neo4j transaction rolled back");
 					session.close();
 				})
 				.catch((error) => {
-					console.log(error);
+					console.error(error);
 					session.close();
 				});
 			res.status(400).json(error);
