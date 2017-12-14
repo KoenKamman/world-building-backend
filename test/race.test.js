@@ -5,7 +5,7 @@ const app = require('../server');
 const request = require('supertest');
 
 describe('Race Tests', () => {
-	let race;
+	let race, race2, race3;
 
 	beforeEach((done) => {
 		const race = new Race({
@@ -16,9 +16,33 @@ describe('Race Tests', () => {
 			intelligence_mod: 5
 		});
 
+		const race2 = new Race({
+			name: 'testing race 2',
+			description: 'testing description 2',
+			strength_mod: 5,
+			agility_mod: 5,
+			intelligence_mod: 5
+		});
+
+		const race3 = new Race({
+			name: 'testing race 3',
+			description: 'testing description 3',
+			strength_mod: 7,
+			agility_mod: 7,
+			intelligence_mod: 7
+		});
+
 		request(app).post('/api/v1/races').send(race)
 			.then((result) => {
 				this.race = result.body;
+				return request(app).post('/api/v1/races').send(race2);
+			})
+			.then((result) => {
+				this.race2 = result.body;
+				return request(app).post('/api/v1/races').send(race3);
+			})
+			.then((result) => {
+				this.race3 = result.body;
 				done();
 			})
 			.catch((error) => {
@@ -36,8 +60,22 @@ describe('Race Tests', () => {
 			.then((result) => {
 				const body = result.body;
 				assert.isArray(body);
-				assert.lengthOf(body, 1);
+				assert.lengthOf(body, 3);
 				assert(body[0]._id = this.race._id);
+				done();
+			});
+	});
+
+	it('GET request at /api/v1/races/:id/related returns a list of related races', (done) => {
+		request(app)
+			.get('/api/v1/races/' + this.race._id + '/related')
+			.set('Accept', 'application/json')
+			.expect('Content-Type', /json/)
+			.expect(200)
+			.then((result) => {
+				const body = result.body;
+				assert.isArray(body);
+				assert.lengthOf(body, 1);
 				done();
 			});
 	});

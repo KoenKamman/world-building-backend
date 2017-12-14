@@ -47,6 +47,10 @@ const updateRace =
 	"SET race.name =  {nameParam}, race.description = {descParam} " +
 	"RETURN race, str_mod, agi_mod, int_mod";
 
+const getRelatedRaces =
+	"MATCH (n:Race {mongoID: {mongoParam}})-[:HAS_MODIFIER]->(n2)<-[:HAS_MODIFIER]-(n3:Race) " +
+	"RETURN DISTINCT n3";
+
 
 // Middleware - Removes _id from request body
 
@@ -70,6 +74,22 @@ routes.get('/races', (req, res) => {
 			res.status(400).json(error);
 		});
 
+});
+
+
+// Returns a list of related races
+
+routes.get('/races/:id/related', (req, res) => {
+	const session = neo4j.driver.session();
+
+	session.run(getRelatedRaces, {mongoParam: req.params.id})
+		.then((result) => {
+			res.status(200).json(result.records);
+		})
+		.catch((error) => {
+			console.error(error);
+			res.status(400).json(error);
+		})
 });
 
 

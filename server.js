@@ -32,6 +32,18 @@ app.use('/api/v1', characterRoutes);
 app.use('/api/v1', raceRoutes);
 app.use('/api/v1', adventureRoutes);
 
+app.use('/about', (req, res) => {
+	res.status(200);
+	res.json({
+		'student': 'Koen Kamman',
+		'studentID': ' 2118679',
+		'github': [
+			'https://github.com/KoenKamman/world-building-backend',
+			'https://github.com/KoenKamman/world-building-frontend'
+			]
+	});
+});
+
 app.use('*', (req, res) => {
 	res.status(400);
 	res.json({
