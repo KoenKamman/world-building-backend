@@ -5,6 +5,7 @@ const characterRoutes = require('./api/v1/character.route');
 const raceRoutes = require('./api/v1/race.route');
 const adventureRoutes = require('./api/v1/adventure.route');
 const config = require('./config/env');
+const mongodb = require('./config/mongo.db');
 
 const app = express();
 
@@ -30,6 +31,18 @@ app.use((req, res, next) => {
 app.use('/api/v1', characterRoutes);
 app.use('/api/v1', raceRoutes);
 app.use('/api/v1', adventureRoutes);
+
+app.use('/about', (req, res) => {
+	res.status(200);
+	res.json({
+		'student': 'Koen Kamman',
+		'studentID': ' 2118679',
+		'github': [
+			'https://github.com/KoenKamman/world-building-backend',
+			'https://github.com/KoenKamman/world-building-frontend'
+			]
+	});
+});
 
 app.use('*', (req, res) => {
 	res.status(400);

@@ -1,24 +1,32 @@
 const mongoose = require('mongoose');
+const neo4j = require('../config/neo4j.db');
 
 mongoose.Promise = global.Promise;
 
+let connection;
+
 before((done) => {
-	mongoose.connect('mongodb://localhost/worldbuilding_test');
-	mongoose.connection
-		.once('open', () => done())
-		.on('error', (err) => {
-			console.warn('Warning', err);
+	mongoose.connect('mongodb://localhost/worldbuilding_test', {useMongoClient: true});
+	connection = mongoose.connection
+		.once('open', () => {
+			console.log('Connected to MongoDB worldbuilding_test on localhost');
+			console.log('');
+			done();
+		})
+		.on('error', (error) => {
+			console.warn('Warning', error.toString());
 		});
 });
 
 beforeEach((done) => {
-	const {characters, races} = mongoose.connection.collections;
-	Promise.all([characters.drop(), races.drop()])
+	connection.db.dropDatabase()
+		.then(() => {
+			return neo4j.driver.session().run('MATCH (n) DETACH DELETE n');
+		})
 		.then(() => {
 			done();
 		})
 		.catch((error) => {
-			console.log(error);
-			done();
-		});
+			console.error(error);
+		})
 });
