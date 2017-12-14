@@ -5,6 +5,7 @@ const characterRoutes = require('./api/v1/character.route');
 const raceRoutes = require('./api/v1/race.route');
 const adventureRoutes = require('./api/v1/adventure.route');
 const config = require('./config/env');
+const mongodb = require('./config/mongo.db');
 
 const app = express();
 
