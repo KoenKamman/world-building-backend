@@ -49,15 +49,27 @@ CharacterSchema.virtual('level').get(function () {
 });
 
 CharacterSchema.virtual('strength').get(function () {
-	return this.race.strength_mod * this.level;
+	if (this.race !== null) {
+		return this.race.strength_mod * this.level;
+	} else {
+		return 0;
+	}
 });
 
 CharacterSchema.virtual('agility').get(function () {
-	return this.race.agility_mod * this.level;
+	if (this.race !== null) {
+		return this.race.agility_mod * this.level;
+	} else {
+		return 0;
+	}
 });
 
 CharacterSchema.virtual('intelligence').get(function () {
-	return this.race.intelligence_mod * this.level;
+	if (this.race !== null) {
+		return this.race.intelligence_mod * this.level;
+	} else {
+		return 0;
+	}
 });
 
 
