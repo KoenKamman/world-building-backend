@@ -16,22 +16,13 @@ describe('Race Tests', () => {
 			intelligence_mod: 5
 		});
 
-		// request(app).post('/api/v1/races').send(race)
-		// 	.then((result) => {
-		// 		this.race = result.body;
-		// 		done();
-		// 	})
-		// 	.catch((error) => {
-		// 		console.error(error);
-		// 	});
-
-		race.save()
-			.then(() => {
-				this.race = race;
+		request(app).post('/api/v1/races').send(race)
+			.then((result) => {
+				this.race = result.body;
 				done();
 			})
 			.catch((error) => {
-				console.log(error);
+				console.error(error);
 			});
 
 	});

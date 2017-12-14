@@ -10,7 +10,7 @@ describe('Adventure Tests', () => {
 	let race, character, adventure;
 
 	beforeEach((done) => {
-		const race = new Race({
+		let race = new Race({
 			name: 'testing race',
 			description: 'testing description',
 			strength_mod: 5,
@@ -18,54 +18,52 @@ describe('Adventure Tests', () => {
 			intelligence_mod: 5
 		});
 
-		const character = new Character({
+		let character = new Character({
 			name: 'testing character',
 			description: 'testing description',
 			experience: 1000,
-			race: race._id
+			race: race['_id']
 		});
 
-		const adventure = new Adventure({
+		let adventure = new Adventure({
 			name: 'testing adventure',
 			description: 'testing description',
 			experience_gain: 2000,
-			characters: [character._id]
+			characters: [character['_id']]
 		});
 
-		// request(app).post('/api/v1/adventures').send(adventure)
-		// 	.then((result) => {
-		// 	this.adventure = result.body;
-		// 		return request(app).post('/api/v1/characters').send(character)
-		// 	})
-		// 	.then((result) => {
-		// 		this.character = result.body;
-		// 		return request(app).post('/api/v1/races').send(race);
-		// 	})
-		// 	.then((result) => {
-		// 		this.race = result.body;
-		// 		done();
-		// 	})
-		// 	.catch((error) => {
-		// 		console.error(error);
-		// 	});
-
-		race.save()
-			.then(() => {
-				return character.save();
+		request(app).post('/api/v1/races').send({
+			name: 'testing race',
+			description: 'testing description',
+			strength_mod: 5,
+			agility_mod: 5,
+			intelligence_mod: 5
+		})
+			.then((result) => {
+				this.race = result.body;
+				return request(app).post('/api/v1/characters').send({
+					name: 'testing character',
+					description: 'testing description',
+					experience: 1000,
+					race: result.body._id
+				})
 			})
-			.then(() => {
-				return adventure.save();
+			.then((result) => {
+				this.character = result.body;
+				return request(app).post('/api/v1/adventures').send({
+					name: 'testing adventure',
+					description: 'testing description',
+					experience_gain: 2000,
+					characters: [result.body._id]
+				});
 			})
-			.then(() => {
-				this.race = race;
-				this.character = character;
-				this.adventure = adventure;
+			.then((result) => {
+				this.adventure = result.body;
 				done();
 			})
 			.catch((error) => {
-				console.log(error);
+				console.error(error);
 			});
-
 	});
 
 	it('GET request at /api/v1/adventures returns a list of all adventures', (done) => {

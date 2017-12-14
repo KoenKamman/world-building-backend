@@ -9,47 +9,29 @@ describe('Character Tests', () => {
 	let race, character;
 
 	beforeEach((done) => {
-		const race = new Race({
+		request(app).post('/api/v1/races').send({
 			name: 'testing race',
 			description: 'testing description',
 			strength_mod: 5,
 			agility_mod: 5,
 			intelligence_mod: 5
-		});
-
-		const character = new Character({
-			name: 'testing character',
-			description: 'testing description',
-			experience: 1000,
-			race: race._id
-		});
-
-		// request(app).post('/api/v1/characters').send(character)
-		// 	.then((result) => {
-		// 		this.character = result.body;
-		// 		return request(app).post('/api/v1/races').send(race);
-		// 	})
-		// 	.then((result) => {
-		// 		this.race = result.body;
-		// 		done();
-		// 	})
-		// 	.catch((error) => {
-		// 		console.error(error);
-		// 	});
-
-		race.save()
-			.then(() => {
-				return character.save();
+		})
+			.then((result) => {
+				this.race = result.body;
+				return request(app).post('/api/v1/characters').send({
+					name: 'testing character',
+					description: 'testing description',
+					experience: 1000,
+					race: result.body._id
+				});
 			})
-			.then(() => {
-				this.race = race;
-				this.character = character;
+			.then((result) => {
+				this.character = result.body;
 				done();
 			})
 			.catch((error) => {
-				console.log(error);
+				console.error(error);
 			});
-
 	});
 
 	it('GET request at /api/v1/characters returns a list of all characters', (done) => {

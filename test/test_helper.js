@@ -13,13 +13,14 @@ before((done) => {
 });
 
 beforeEach((done) => {
-	const {characters, races, adventures} = mongoose.connection.collections;
-	const session = neo4j.driver.session();
-	Promise.all([characters.drop(), races.drop(), adventures.drop(), session.run('MATCH (n) DETACH DELETE n')])
+	mongoose.connection.db.dropDatabase()
+		.then(() => {
+			return neo4j.driver.session().run('MATCH (n) DETACH DELETE n');
+		})
 		.then(() => {
 			done();
 		})
-		.catch(() => {
-			done();
-		});
+		.catch((error) => {
+			console.error(error);
+		})
 });

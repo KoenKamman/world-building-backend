@@ -17,7 +17,7 @@ const dburl = process.env.NODE_ENV === 'production' ?
 
 const dburlNeo = process.env.NODE_ENV === 'production' ?
 	'bolt://' + env.dbHostNeo + ':' + env.dbPortNeo:
-	'bolt://localhost:7687/';
+	'bolt://localhost/';
 
 module.exports = {
 	env: env,
