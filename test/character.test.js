@@ -17,7 +17,7 @@ describe('Character Tests', () => {
 			intelligence_mod: 5
 		})
 			.then((result) => {
-				this.race = result.body;
+				race = result.body;
 				return request(app).post('/api/v1/characters').send({
 					name: 'testing character',
 					description: 'testing description',
@@ -26,7 +26,7 @@ describe('Character Tests', () => {
 				});
 			})
 			.then((result) => {
-				this.character = result.body;
+				character = result.body;
 				done();
 			})
 			.catch((error) => {
@@ -44,35 +44,35 @@ describe('Character Tests', () => {
 				const body = result.body;
 				assert.isArray(body);
 				assert.lengthOf(body, 1);
-				assert(body[0]._id = this.character._id);
-				assert(body[0].level = body[0].experience / 10);
-				assert(body[0].strength = body[0].race.strength_mod * body[0].level);
-				assert(body[0].agility = body[0].race.agility_mod * body[0].level);
-				assert(body[0].intelligence = body[0].race.intelligence_mod * body[0].level);
+				assert(body[0]._id === character._id);
+				assert(body[0].level === body[0].experience / 10);
+				assert(body[0].strength === body[0].race.strength_mod * body[0].level);
+				assert(body[0].agility === body[0].race.agility_mod * body[0].level);
+				assert(body[0].intelligence === body[0].race.intelligence_mod * body[0].level);
 				done();
 			});
 	});
 
 	it('GET request at /api/v1/characters/:id returns a single character', (done) => {
 		request(app)
-			.get('/api/v1/characters/' + this.character._id)
+			.get('/api/v1/characters/' + character._id)
 			.set('Accept', 'application/json')
 			.expect('Content-Type', /json/)
 			.expect(200)
 			.then((result) => {
 				const body = result.body;
 				assert.isNotArray(body);
-				assert(body._id = this.character._id);
-				assert(body.level = body.experience / 100);
-				assert(body.strength = body.race.strength_mod * body.level);
-				assert(body.agility = body.race.agility_mod * body.level);
-				assert(body.intelligence = body.race.intelligence_mod * body.level);
+				assert(body._id === character._id);
+				assert(body.level === body.experience / 100);
+				assert(body.strength === body.race.strength_mod * body.level);
+				assert(body.agility === body.race.agility_mod * body.level);
+				assert(body.intelligence === body.race.intelligence_mod * body.level);
 				done();
 			});
 	});
 
 	it('POST request at /api/v1/characters returns a new character', (done) => {
-		const character = new Character({
+		const newcharacter = new Character({
 			name: 'just posted',
 			description: 'new description',
 			experience: 4000,
@@ -81,61 +81,61 @@ describe('Character Tests', () => {
 
 		request(app)
 			.post('/api/v1/characters/')
-			.send(character)
+			.send(newcharacter)
 			.expect(201)
 			.then((result) => {
 				const body = result.body;
 				assert.isNotArray(body);
-				assert(body._id = character._id);
-				assert(body.level = body.experience / 100);
-				assert(body.strength = body.race.strength_mod * body.level);
-				assert(body.agility = body.race.agility_mod * body.level);
-				assert(body.intelligence = body.race.intelligence_mod * body.level);
+				assert(body._id === newcharacter._id);
+				assert(body.level === body.experience / 100);
+				assert(body.strength === body.race.strength_mod * body.level);
+				assert(body.agility === body.race.agility_mod * body.level);
+				assert(body.intelligence === body.race.intelligence_mod * body.level);
 				done();
 			});
 	});
 
 	it('PUT request at api/v1/characters/:id returns an updated character', (done) => {
-		const character = new Character({
+		const updatedcharacter = new Character({
 			name: 'just updated',
 			description: 'updated description',
 			experience: 5000,
-			race: this.race._id
+			race: race._id
 		});
 
 		request(app)
-			.put('/api/v1/characters/' + this.character._id)
-			.send(character)
+			.put('/api/v1/characters/' + character._id)
+			.send(updatedcharacter)
 			.expect(200)
 			.then((result) => {
 				const body = result.body;
 				assert.isNotArray(body);
-				assert(body._id = character._id);
-				assert(body.level = body.experience / 100);
-				assert(body.strength = body.race.strength_mod * body.level);
-				assert(body.agility = body.race.agility_mod * body.level);
-				assert(body.intelligence = body.race.intelligence_mod * body.level);
+				assert(body._id === character._id);
+				assert(body.level === body.experience / 100);
+				assert(body.strength === body.race.strength_mod * body.level);
+				assert(body.agility === body.race.agility_mod * body.level);
+				assert(body.intelligence === body.race.intelligence_mod * body.level);
 				done();
 			});
 	});
 
 	it('DELETE request at api/v1/characters/:id returns the deleted character', (done) => {
 		request(app)
-			.delete('/api/v1/characters/' + this.character._id)
+			.delete('/api/v1/characters/' + character._id)
 			.set('Accept', 'application/json')
 			.expect('Content-Type', /json/)
 			.expect(200)
 			.then((result) => {
 				const body = result.body;
 				assert.isNotArray(body);
-				assert(body._id = this.character._id);
-				assert(body.level = body.experience / 100);
-				assert(body.strength = body.race.strength_mod * body.level);
-				assert(body.agility = body.race.agility_mod * body.level);
-				assert(body.intelligence = body.race.intelligence_mod * body.level);
+				assert(body._id === character._id);
+				assert(body.level === body.experience / 100);
+				assert(body.strength === body.race.strength_mod * body.level);
+				assert(body.agility === body.race.agility_mod * body.level);
+				assert(body.intelligence === body.race.intelligence_mod * body.level);
 
 				request(app)
-					.get('/api/v1/characters/' + this.character._id)
+					.get('/api/v1/characters/' + character._id)
 					.set('Accept', 'application/json')
 					.expect('Content-Type', /json/)
 					.expect(404, done);

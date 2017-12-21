@@ -10,28 +10,6 @@ describe('Adventure Tests', () => {
 	let race, character, adventure;
 
 	beforeEach((done) => {
-		let race = new Race({
-			name: 'testing race',
-			description: 'testing description',
-			strength_mod: 5,
-			agility_mod: 5,
-			intelligence_mod: 5
-		});
-
-		let character = new Character({
-			name: 'testing character',
-			description: 'testing description',
-			experience: 1000,
-			race: race['_id']
-		});
-
-		let adventure = new Adventure({
-			name: 'testing adventure',
-			description: 'testing description',
-			experience_gain: 2000,
-			characters: [character['_id']]
-		});
-
 		request(app).post('/api/v1/races').send({
 			name: 'testing race',
 			description: 'testing description',
@@ -40,7 +18,7 @@ describe('Adventure Tests', () => {
 			intelligence_mod: 5
 		})
 			.then((result) => {
-				this.race = result.body;
+				race = result.body;
 				return request(app).post('/api/v1/characters').send({
 					name: 'testing character',
 					description: 'testing description',
@@ -49,7 +27,7 @@ describe('Adventure Tests', () => {
 				})
 			})
 			.then((result) => {
-				this.character = result.body;
+				character = result.body;
 				return request(app).post('/api/v1/adventures').send({
 					name: 'testing adventure',
 					description: 'testing description',
@@ -58,7 +36,7 @@ describe('Adventure Tests', () => {
 				});
 			})
 			.then((result) => {
-				this.adventure = result.body;
+				adventure = result.body;
 				done();
 			})
 			.catch((error) => {
@@ -76,21 +54,21 @@ describe('Adventure Tests', () => {
 				const body = result.body;
 				assert.isArray(body);
 				assert.lengthOf(body, 1);
-				assert(body[0]._id = this.character._id);
+				assert(body[0]._id === character._id);
 				done();
 			});
 	});
 
 	it('GET request at /api/v1/adventures/:id returns a single adventure', (done) => {
 		request(app)
-			.get('/api/v1/adventures/' + this.adventure._id)
+			.get('/api/v1/adventures/' + adventure._id)
 			.set('Accept', 'application/json')
 			.expect('Content-Type', /json/)
 			.expect(200)
 			.then((result) => {
 				const body = result.body;
 				assert.isNotArray(body);
-				assert(body._id = this.character._id);
+				assert(body._id === character._id);
 				done();
 			});
 	});
@@ -100,7 +78,7 @@ describe('Adventure Tests', () => {
 			name: 'just posted',
 			description: 'new description',
 			experience_gain: 3000,
-			characters: [this.character._id]
+			characters: [character._id]
 		});
 
 		request(app)
@@ -110,7 +88,7 @@ describe('Adventure Tests', () => {
 			.then((result) => {
 				const body = result.body;
 				assert.isNotArray(body);
-				assert(body._id = adventure._id);
+				assert(body._id === adventure._id);
 				done();
 			});
 	});
@@ -120,34 +98,34 @@ describe('Adventure Tests', () => {
 			name: 'just updated',
 			description: 'updated description',
 			experience_gain: 4000,
-			characters: [this.character._id]
+			characters: [character._id]
 		});
 
 		request(app)
-			.put('/api/v1/adventures/' + this.adventure._id)
+			.put('/api/v1/adventures/' + adventure._id)
 			.send(adventure)
 			.expect(200)
 			.then((result) => {
 				const body = result.body;
 				assert.isNotArray(body);
-				assert(body._id = adventure._id);
+				assert(body._id === adventure._id);
 				done();
 			});
 	});
 
 	it('DELETE request at api/v1/adventures/:id returns the deleted adventure', (done) => {
 		request(app)
-			.delete('/api/v1/adventures/' + this.adventure._id)
+			.delete('/api/v1/adventures/' + adventure._id)
 			.set('Accept', 'application/json')
 			.expect('Content-Type', /json/)
 			.expect(200)
 			.then((result) => {
 				const body = result.body;
 				assert.isNotArray(body);
-				assert(body._id = this.adventure._id);
+				assert(body._id === adventure._id);
 
 				request(app)
-					.get('/api/v1/characters/' + this.adventure._id)
+					.get('/api/v1/characters/' + adventure._id)
 					.set('Accept', 'application/json')
 					.expect('Content-Type', /json/)
 					.expect(404, done);
